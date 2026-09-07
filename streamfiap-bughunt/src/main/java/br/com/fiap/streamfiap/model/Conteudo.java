@@ -12,9 +12,7 @@ public abstract class Conteudo {
 
     private String titulo;
     private String categoria;
-
-    public int duracaoMinutos;
-
+    private int duracaoMinutos; // classe 'duracaoMinutos' era uma classe publica, agora encapsulada
     private int classificacaoEtaria;
     private boolean disponivel;
 
