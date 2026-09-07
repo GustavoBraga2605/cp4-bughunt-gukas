@@ -34,6 +34,20 @@ public class Usuario {
                     + " anos não pode assistir a " + c.getTitulo()
                     + " (classificação " + c.getClassificacaoEtaria() + " anos)");
         }
-        double p = c.calcularPrecoAluguel();
-        if (!temCreditosSuficientes(p)) {
-            throw new CreditosInsuficientesException("Créditos insuficientes para
+        double preco = c.calcularPrecoAluguel();
+        if (!temCreditosSuficientes(preco)) {
+            throw new CreditosInsuficientesException("Créditos insuficientes para alugar " + c.getTitulo());
+        }
+        debitarCreditos(preco);
+        c.setDisponivel(false);
+        return this;
+    }
+    // Getters e Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+    public int getIdade() { return idade; }
+    public void setIdade(int idade) { this.idade = idade; }
+    public double getCreditos() { return creditos; }
+    public void setCreditos(double
