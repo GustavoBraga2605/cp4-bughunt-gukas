@@ -24,8 +24,9 @@ public class AluguelController {
     @PostMapping
     public ResponseEntity<Usuario> alugar(@RequestParam Long usuarioId, @RequestParam Long conteudoId)
             throws ClassificacaoIndicativaException {
+        // *era IllegalArgumentException, sem handler registrado
         Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + usuarioId));
+                .orElseThrow(() -> new UsuarioNaoEncontradoException("Usuário não encontrado: " + usuarioId));
         Conteudo conteudo = conteudoRepository.findById(conteudoId)
                 .orElseThrow(() -> new ConteudoNaoEncontradoException("Conteúdo não encontrado: " + conteudoId));
 
