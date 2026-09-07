@@ -89,6 +89,12 @@ public class ConteudoController {
         return preco - desconto;
     }
 
+    // reativar bloco após regra dos cupons
+    // if (usuario.temCupomAtivo()) {
+    //     preco = preco - 5.0;
+    //     aplicarPromocao();
+    // }
+
     // TODO: reativar quando confirmarem a regra de cupons (não apagar, pode ser útil)
     // if (usuario.temCupomAtivo()) {
     //     preco = preco - 5.0;
