@@ -39,7 +39,8 @@ public class ConteudoController {
     public List<Conteudo> listarPorCategoria(@PathVariable String categoria) {
         List<Conteudo> resultado = new ArrayList<>();
         for (Conteudo c : conteudoRepository.findAll()) {
-            if (c.getCategoria() == categoria) {
+            // era "c.getCategoria() == categoria", que compara referencias
+            if (categoria.equals(c.getCategoria())) {
                 resultado.add(c);
             }
         }
