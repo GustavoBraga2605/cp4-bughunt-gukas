@@ -55,7 +55,7 @@ usa `ConteudoRepository`). Explique por que o Spring precisa gerenciar esses obj
 em vez de criarmos com `new ConteudoRepository()`. O que exatamente o Spring faz ao
 injetar um bean, e por que isso não funcionaria com um `new` comum?
 
-_Reduz acoplamento: a classe não decide como suas dependências são criadas, apenas as recebe (via construtor, idealmente). Isso facilita trocar implementações e testar com mocks, sem alterar o código da classe que depende._
+_No projeto, `ConteudoController`, `UsuarioController` e `AluguelController` recebem seus repositories via `@Autowired` (ex.: `private ConteudoRepository conteudoRepository`). Não daria pra fazer `new ConteudoRepository()` porque `ConteudoRepository` é uma interface, ela não tem corpo, só a assinatura dos métodos (como `findByCategoria`). Quem implementa essa interface de verdade é o Spring Data JPA, em tempo de execução, gerando um proxy que sabe conversar com o banco Oracle. O Spring gerencia esse ciclo de vida (cria o bean uma vez, no início da aplicação, e entrega a mesma instância pra quem precisar dele), isso é o container de Inversão de Controle (IoC) fazendo o trabalho que, se fosse manual, exigiria escrever uma implementação inteira do CRUD._
 
 ### 2. JDBC vs Spring Data JPA (Aulas 12 e 13)
 Na Aula 12 escrevemos um `ProdutoDAO` na mão com `Connection`, `PreparedStatement` e
@@ -63,7 +63,7 @@ Na Aula 12 escrevemos um `ProdutoDAO` na mão com `Connection`, `PreparedStateme
 duas abordagens: o que o Spring Data JPA automatiza, o que o JDBC/DAO ainda resolve
 melhor, e como o `findByCategoria` consegue funcionar sem implementação.
 
-_JDBC é baixo nível: você escreve SQL, abre/fecha conexão e mapeia `ResultSet` manualmente. JPA abstrai isso com ORM (mapeia objeto ↔ tabela) e gera as queries por você. Ganha-se produtividade; perde-se controle fino sobre o SQL exato executado._
+_Na Aula 12, o `ProdutoDAO` exigia abrir `Connection`, montar `PreparedStatement` com SQL na mão, executar e percorrer o `ResultSet` linha a linha pra montar cada objeto, muito código repetitivo pra cada operação (inserir, buscar, listar, deletar). Aqui, o `ConteudoRepository extends JpaRepository<Conteudo, Long>` já ganha esse CRUD pronto sem escrever nada. O método `findByCategoria(String categoria)` nem precisa de implementação: o Spring Data JPA lê o nome do método, entende que é um "find by categoria" e gera a query SQL automaticamente por convenção de nomes. A vantagem é produtividade; a desvantagem é menos controle fino sobre o SQL exato que será executado, o que em consultas muito complexas o JDBC/DAO ainda resolve melhor._
 
 ### 3. Exceções checked vs unchecked (Aula 11)
 A `ClassificacaoIndicativaException` estourava como um erro genérico do servidor,
@@ -71,14 +71,14 @@ sem mensagem útil para o cliente. Explique a diferença entre `extends Exceptio
 `extends RuntimeException` no contexto desse bug, e como você fez a mensagem da
 regra (classificação indicativa) chegar de forma clara ao cliente da API.
 
-_Checked (`IOException`, `SQLException`) representam falhas previsíveis e recuperáveis — o compilador exige tratamento. Unchecked (`RuntimeException` e subclasses) indicam erros de programação (bug), não são forçadas porque, em teoria, não deveriam acontecer se o código estiver correto._
+_A `ClassificacaoIndicativaException` foi criada como `extends Exception` (checked), mas o `GlobalExceptionHandler` não tinha nenhum `@ExceptionHandler` registrado para ela, então, sem tratamento, o Spring devolvia um erro 500 genérico pro cliente, sem a mensagem real do problema. Diferente de uma `RuntimeException` (unchecked), uma exceção checked obriga quem chama o método a tratá-la ou declarar `throws` (como `Usuario.alugar` já fazia). O que faltava era o último elo: capturar essa exceção numa camada central e transformar ela numa resposta HTTP com corpo. Resolvemos adicionando um `@ExceptionHandler(ClassificacaoIndicativaException.class)` que retorna 403 com a mensagem da regra de classificação etária no corpo da resposta._
 
 ### 4. Sobrescrita vs sobrecarga (Aula 7)
 Um dos bugs compilava sem nenhum erro: o método da `Serie` parecia sobrescrever
 `calcularPrecoAluguel`, mas na verdade sobrecarregava. Explique a diferença entre
 override e overload nesse caso e por que a anotação `@Override` teria impedido o bug.
 
-_Sobrecarga (overload): mesmo nome, assinaturas diferentes, resolvida em tempo de compilação. Sobrescrita (override): mesma assinatura em subclasse, resolvida em tempo de execução (polimorfismo). Só a sobrescrita está ligada a polimorfismo._
+_O bug estava em `Serie.calcularPrecoAluguel(double desconto)` — parecia sobrescrever o método de `Conteudo`, mas tinha uma assinatura diferente (um parâmetro a mais). Isso faz o Java tratar como um método novo (sobrecarga/overload), resolvida em tempo de compilação, e não como sobrescrita (override), resolvida em tempo de execução via polimorfismo. Resultado: quando o código chamava `conteudo.calcularPrecoAluguel()` (sem parâmetro) num objeto `Serie`, o Java executava a versão herdada de `Conteudo`, que retorna 9,90 fixo, o método certo nunca era chamado. Se tivéssemos colocado `@Override` na assinatura errada desde o início, o compilador teria acusado erro na hora, porque não existiria mais nenhum método da classe mãe pra sobrescrever ali._
 
 ### 5. Onde blindar o objeto? (Aulas 3, 4 e 13)
 Vimos bugs de dados inválidos aceitos (duração negativa, créditos negativos, campos
@@ -86,7 +86,7 @@ nulos). Em quais lugares (construtor, setter, método do model) cada tipo de val
 deve ficar? Justifique usando os bugs que você encontrou e explique por que validar só
 em um lugar não foi suficiente.
 
-_Não basta `private` + getter/setter. A validação de regra de negócio (ex: saldo não pode ser negativo) deve estar dentro dos métodos que alteram o estado (setter ou método específico como `sacar()`), garantindo que o objeto nunca fique em estado inválido, independente de quem o chama._
+_Encontramos vários dados inválidos sendo aceitos: `duracaoMinutos <= 0` no cadastro de conteúdo, aluguel aprovado mesmo com `creditos` insuficientes (bug da lógica invertida em `temCreditosSuficientes`), e conteúdo indisponível sendo alugado mesmo assim. Deixar os campos `private` com getter/setter (encapsulamento) não é suficiente, isso só impede acesso direto, não impede valores inválidos. A validação de regra de negócio precisa estar dentro do construtor (caso de `duracaoMinutos`, que agora lança `DuracaoInvalidaException`) ou dentro do método que muda o estado (caso de `Usuario.alugar`, que agora verifica disponibilidade e créditos antes de debitar). Sem isso, qualquer código que use a classe poderia colocar o objeto num estado inconsistente, mesmo respeitando o encapsulamento dos atributos._
 
 ### 6. Abstração e interface (Aulas 8 e 9)
 `Conteudo` é abstrata e `Promocionavel` é uma interface. Explique a diferença de
@@ -94,7 +94,7 @@ propósito entre as duas nesse projeto e o que mudaria no código se o Document�
 passasse a ter promoções — quais classes/linhas seriam tocadas e quais ficariam
 intactas? O que isso diz sobre o design do sistema?
 
-_Programar contra a interface (`List` em vez de `ArrayList`) desacopla o código da implementação concreta, permitindo trocar a implementação (`ArrayList` → `LinkedList`) sem alterar quem usa a lista._
+_`Conteudo` é uma classe abstrata porque representa um conceito comum a `Filme`, `Serie` e `Documentario` — todos têm título, categoria, duração, mas nenhum "Conteudo" existe sozinho, sempre é um desses três. Já `Promocionavel` é uma interface porque representa uma capacidade que só alguns tipos têm: hoje, `Filme` e `Serie` implementam `aplicarPromocao`, mas `Documentario` não. Se o Documentário passasse a ter promoções, bastaria fazer `Documentario implements Promocionavel` e escrever o método `aplicarPromocao` nele — nenhuma linha de `Conteudo`, `Filme` ou `Serie` precisaria mudar. Isso mostra o valor de separar "é um" (herança, em `Conteudo`) de "pode fazer" (interface, em `Promocionavel`): cada característica evolui de forma independente, sem forçar mudança nas classes que não a possuem._
 
 ---
 
