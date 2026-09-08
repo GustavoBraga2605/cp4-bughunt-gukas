@@ -41,31 +41,31 @@ que foi mudado, mas a causa raiz de cada um e o conceito da disciplina envolvido
 
 ## Bugs encontrados
 
-| # | Sintoma observado (o que fiz/vi) | Causa raiz (arquivo e linha aproximada) | Correção aplicada | Conceito da disciplina |
+| # | Sintoma observado (o que fizemos/vimos) | Causa raiz (arquivo e linha aproximada) | Correção aplicada | Conceito da disciplina |
 |---|---|---|---|---|
-| bug01 | Usuário cadastrado retorna com `nome` nulo na resposta da API | `Usuario.java`, construtor (~linha 21): `nome = nome;` atribui o parâmetro a ele mesmo | Trocado para `this.nome = nome;` | Escopo de variáveis e uso de `this` |
-| bug02 | Aluguel é aprovado mesmo com saldo menor que o preço; usuário fica com créditos negativos | `Usuario.java`, `temCreditosSuficientes` (~linha 26): comparação invertida (`preco >= creditos`) | Invertido para `preco <= this.creditos` | Regras de negócio no model |
-| bug03 | Campo `duracaoMinutos` pode ser alterado direto de fora da classe, sem passar pelo setter | `Conteudo.java` (~linha 16): atributo declarado `public` | Alterado para `private`, acesso via getter/setter já existentes | Encapsulamento |
-| bug04 | | | | |
-| bug05 | | | | |
-| bug06 | | | | |
-| bug07 | | | | |
-| bug08 | | | | |
-| bug09 | | | | |
-| bug10 | | | | |
-| bug11 | | | | |
-| bug12 | | | | |
+| bug01 | Documentário alugado cobrando R$ 9,90 em vez de ser gratuito | `Documentario.java`: não sobrescrevia `calcularPrecoAluguel()`, herdava o valor fixo de `Conteudo` | Adicionado `@Override public double calcularPrecoAluguel() { return 0.0; }` | Herança e polimorfismo |
+| bug02 | Série sempre alugava por R$ 9,90 em vez do preço por temporada (4,90 × temporadas) | `Serie.java`: `calcularPrecoAluguel(double desconto)` tinha assinatura diferente da classe mãe — era sobrecarga, não sobrescrita, então nunca era chamado | Removido o parâmetro e adicionado `@Override`, método passou a sobrescrever corretamente | Sobrescrita (override) vs sobrecarga (overload) |
+| bug03 | Ao cadastrar série, título/categoria/duração/classificação ficavam nulos/zerados; projeto não compilava | `Serie.java`, construtor: não chamava `super(...)` com todos os parâmetros (faltava `disponivel`); `ConteudoController.cadastrarSerie` não repassava esse valor | Construtor de `Serie` passou a chamar `super(titulo, categoria, duracaoMinutos, classificacaoEtaria, disponivel)`; `cadastrarSerie` ajustado para passar `serie.isDisponivel()` | Herança e construtores |
+| bug04 | Filme com promoção ficava mais caro em vez de mais barato | `Filme.java`, `aplicarPromocao` (~linha 17): multiplicava por `1.2` (aumento de 20%) em vez de `0.8` (desconto de 20%) | Corrigido o multiplicador para `preco * 0.8` | Interfaces (Promocionavel) e regras de negócio |
+| bug05 | Aluguel era aprovado mesmo com saldo menor que o preço; usuário ficava com créditos negativos | `Usuario.java`, `temCreditosSuficientes` (~linha 27): comparação invertida (`preco >= creditos`) | Invertido para `preco <= this.creditos` | Regras de negócio no model |
+| bug06 | Usuário cadastrado retorna com `nome` nulo na resposta da API | `Usuario.java`, construtor (~linha 22): `nome = nome;` atribui o parâmetro a ele mesmo | Trocado para `this.nome = nome;` | Escopo de variáveis e uso de `this` |
+| bug07 | `id` do usuário cadastrado vinha `null`, sem ser gerado pelo banco | `Usuario.java`, campo `id` (~linha 13-14): só tinha `@Id`, sem `@GeneratedValue` | Adicionado `@GeneratedValue(strategy = GenerationType.IDENTITY)` | JPA / mapeamento de entidades |
+| bug08 | Buscar um conteúdo inexistente retornava 200 vazio, como se fosse sucesso | `ConteudoController.buscarPorId`: catch vazio engolia a exceção e retornava `null` | Removido o try/catch; agora usa `.orElseThrow(() -> new ConteudoNaoEncontradoException(...))`, retornando 404 com mensagem | Tratamento de exceções |
+| bug09 | Filtro por categoria não retornava nenhum resultado (ou resultados errados) | `ConteudoController.listarPorCategoria`: comparava Strings com `==` em vez de `.equals()` | Trocado para `categoria.equals(c.getCategoria())` | Comparação de objetos vs referências em Java |
+| bug10 | Tentar alugar conteúdo com classificação indicativa incompatível estourava erro 500 genérico, sem mensagem útil | `ClassificacaoIndicativaException` é checked, mas `GlobalExceptionHandler` não tinha `@ExceptionHandler` pra ela | Adicionado handler retornando 403 com a mensagem da exceção | Exceções checked vs unchecked |
+| bug11 | Conteúdo com `duracaoMinutos <= 0` era cadastrado normalmente | Nenhuma validação de duração em `Conteudo`/subclasses | Criada `DuracaoInvalidaException`; validação adicionada no construtor de `Conteudo`; handler registrado no `GlobalExceptionHandler` (400) | Validação de regras de negócio no domínio |
+| bug12 | Conteúdo indisponível era alugado normalmente (e ainda debitava crédito) | `Usuario.alugar`: nunca verificava `c.isDisponivel()` | Adicionada checagem no início do método, lançando `ConteudoIndisponivelException` | Regras de negócio no model |
 
 ## Ajustes de Clean Code
 
 | # | Onde estava | Qual princípio/boas práticas era violado | O que mudamos |
 |---|---|---|---|
-| clean01 | `Usuario.alugar()` — bloco do recibo | Uso de `System.out.println` para log de aplicação: sem nível de severidade, sem timestamp, sem controle por ambiente | Substituído por SLF4J (`Logger` + `logger.info` com placeholders `{}`) |
-| clean02 | | | |
-| clean03 | | | |
-| clean04 | | | |
-| clean05 | | | |
-| clean06 | | | |
+| clean01 | `Conteudo.java`, atributo `duracaoMinutos` | Encapsulamento: campo era `public`, acessível direto de fora da classe | Alterado para `private`, acesso via getter/setter já existentes (e ajustados 3 acessos diretos no `ConteudoController` para usar `.getDuracaoMinutos()`) |
+| clean02 | `Usuario.debitarCreditos` | Comentário enganoso: dizia "adiciona o valor aos créditos" enquanto o código subtraía | Comentário corrigido para refletir o que o código realmente faz |
+| clean03 | `ConteudoController.java` | Código morto: método `calcularDescontoAntigo` nunca era chamado, além de dois blocos de código comentado duplicados sobre "regra de cupons" | Removidos o método e os blocos comentados |
+| clean04 | `Serie.java`, método de preço | Faltava `@Override` no método que deveria sobrescrever `calcularPrecoAluguel` — a anotação teria acusado o erro de assinatura em tempo de compilação | Adicionado `@Override` (corrigido junto com o bug02) |
+| clean05 | `Usuario.alugar` | Variável de nome sem significado: `double p` | Renomeada para `double preco`, com os usos atualizados |
+| clean06 | `Usuario.alugar()` — bloco do recibo | `System.out.println` para "imprimir recibo" direto no model, misturando regra de negócio com apresentação (viola Responsabilidade Única) | Bloco removido do model |
 
 ---
 
