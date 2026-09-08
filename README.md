@@ -49,9 +49,6 @@
 
 ## Parte 3 — Perguntas de reflexão
 
-> Responda com suas palavras, 5 a 10 linhas cada, **usando o código real do projeto
-> como exemplo**. Respostas genéricas de tutorial não pontuam.
-
 ### 1. Injeção de dependência (Aula 13)
 Os controllers recebem os repositories via `@Autowired` (ex.: `ConteudoController`
 usa `ConteudoRepository`). Explique por que o Spring precisa gerenciar esses objetos
