@@ -30,7 +30,7 @@ que foi mudado, mas a causa raiz de cada um e o conceito da disciplina envolvido
 
 ## Identificação
 
-**Grupo:** ___
+**Grupo:**
 
 | Integrante | RM | Turma |
 |---|---|---|
