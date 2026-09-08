@@ -35,7 +35,6 @@ que foi mudado, mas a causa raiz de cada um e o conceito da disciplina envolvido
 | Integrante | RM | Turma |
 |---|---|---|
 | Gustavo Braga | 562247 | 2CCPO |
-| Gustavo Schimith | 564800 | 2CCPO |
 | Lucas Mendes | 563667 | 2CCPO |
 | Kaio Correa | 563443 | 2CCPO |
 
@@ -95,14 +94,6 @@ _(a preencher)_
 ### 6. Abstração e interface (Aulas 8 e 9)
 
 _(a preencher)_
-
----
-
-## 4 
-
-```
-
-```
 
 ---
 
