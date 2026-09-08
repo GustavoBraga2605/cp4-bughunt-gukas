@@ -73,29 +73,42 @@ que foi mudado, mas a causa raiz de cada um e o conceito da disciplina envolvido
 
 ### 1. Injeção de dependência (Aula 13)
 
-_(a preencher)_
+_Se uma classe `Pedido` cria sozinha sua instância de `PagamentoService` com `new PagamentoService()`, por que isso é considerado um "acoplamento forte"? O que exatamente muda no design (e nos testes) quando essa dependência passa a ser recebida via construtor?_
 
 ### 2. JDBC vs Spring Data JPA (Aulas 12 e 13)
 
-_(a preencher)_
+_Ambos no fim das contas "conversam com o banco de dados" — então por que o JPA existe? Pense no que você precisa escrever manualmente em JDBC (conexão, statement, mapeamento de ResultSet) e o que o JPA abstrai. Essa abstração é sempre vantagem, ou existe cenário em que o controle manual do JDBC compensa?_
 
 ### 3. Exceções checked vs unchecked (Aula 11)
 
-_(a preencher)_
+_Por que o compilador *obriga* você a tratar uma `IOException` mas não obriga a tratar uma `NullPointerException`? O que essa diferença revela sobre a intenção do Java quanto a "erros que você pode prever e recuperar" versus "erros que indicam bug no código"?_
 
 ### 4. Sobrescrita vs sobrecarga (Aula 7)
 
-_(a preencher)_
+_Se você tem `calcular(int a, int b)` e cria `calcular(double a, double b)` na mesma classe, isso é sobrecarga. Mas se uma subclasse reimplementa `calcular(int a, int b)` com o mesmo assinatura, isso é sobrescrita. Por que uma acontece em tempo de compilação e a outra em tempo de execução? Qual das duas está realmente ligada ao conceito de polimorfismo?_
 
 ### 5. Onde blindar o objeto? (Aulas 3, 4 e 13)
 
-_(a preencher)_
+_Encapsulamento não é só "colocar `private` nos atributos e gerar getters/setters". Se um `Conta` tem `saldo` privado mas tem um `setSaldo(double valor)` público sem nenhuma validação, o objeto está realmente protegido? Onde deveria morar a regra "saldo não pode ficar negativo" — no setter, no método de saque, ou em ambos?_
 
 ### 6. Abstração e interface (Aulas 8 e 9)
 
-_(a preencher)_
+_Uma `interface` em Java não implementa nada (ou quase nada, com os `default methods`). Então qual é o ganho real de programar contra uma interface (`List<String> lista = new ArrayList<>();`) em vez de contra a implementação concreta? O que isso te permite fazer amanhã que a implementação direta não permitiria?_
 
 ---
+
+## Respostas pós-reflexão
+
+### 1. Reduz acoplamento: a classe não decide como suas dependências são criadas, apenas as recebe (via construtor, idealmente). Isso facilita trocar implementações e testar com mocks, sem alterar o código da classe que depende.
+### 2. JDBC é baixo nível: você escreve SQL, abre/fecha conexão e mapeia `ResultSet` manualmente. JPA abstrai isso com ORM (mapeia objeto ↔ tabela) e gera as queries por você. Ganha-se produtividade; perde-se controle fino sobre o SQL exato executado.
+### 3. Checked (`IOException`, `SQLException`) representam falhas previsíveis e recuperáveis — o compilador exige tratamento. Unchecked (`RuntimeException` e subclasses) indicam erros de programação (bug) — não são forçadas porque, em teoria, não deveriam acontecer se o código estiver correto.
+### 4. Sobrecarga (overload): mesmo nome, assinaturas diferentes, resolvida em tempo de compilação. Sobrescrita (override): mesma assinatura em subclasse, resolvida em tempo de execução (polimorfismo). Só a sobrescrita está ligada a polimorfismo.
+### 5. Não basta `private` + getter/setter. A validação de regra de negócio (ex: saldo não pode ser negativo) deve estar dentro dos métodos que alteram o estado (setter ou método específico como `sacar()`), garantindo que o objeto nunca fique em estado inválido, independente de quem o chama.
+### 6. Programar contra a interface (`List` em vez de `ArrayList`) desacopla o código da implementação concreta, permitindo trocar a implementação (`ArrayList` → `LinkedList`) sem alterar quem usa a lista.
+
+---
+
+
 
 ## Como executar
 
