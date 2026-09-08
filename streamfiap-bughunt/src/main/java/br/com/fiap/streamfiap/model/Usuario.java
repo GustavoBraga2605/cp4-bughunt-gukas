@@ -46,13 +46,13 @@ public class Usuario {
                     + " (classificação " + c.getClassificacaoEtaria() + " anos)");
         }
 
-        double p = c.calcularPrecoAluguel();
+        double preco = c.calcularPrecoAluguel();
 
-        if (!temCreditosSuficientes(p)) {
+        if (!temCreditosSuficientes(preco)) {
             throw new CreditosInsuficientesException("Créditos insuficientes para alugar " + c.getTitulo());
         }
 
-        debitarCreditos(p);
+        debitarCreditos(preco);
         c.setDisponivel(false);
 
         return this;
