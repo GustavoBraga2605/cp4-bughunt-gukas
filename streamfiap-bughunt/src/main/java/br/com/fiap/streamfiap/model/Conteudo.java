@@ -1,5 +1,6 @@
 package br.com.fiap.streamfiap.model;
 
+import br.com.fiap.streamfiap.exception.DuracaoInvalidaException;
 import jakarta.persistence.*;
 
 @Entity
@@ -20,6 +21,9 @@ public abstract class Conteudo {
     }
 
     protected Conteudo(String titulo, String categoria, int duracaoMinutos, int classificacaoEtaria, boolean disponivel) {
+        if (duracaoMinutos <= 0) {
+            throw new DuracaoInvalidaException("duracaoMinutos deve ser maior que zero");
+        }
         this.titulo = titulo;
         this.categoria = categoria;
         this.duracaoMinutos = duracaoMinutos;
